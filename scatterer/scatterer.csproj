@@ -41,7 +41,7 @@
 
   <PropertyGroup>
     <!-- Change this to point towards your KSP directory -->
-    <KSPDir>..\..\..\..\Steam\steamapps\common\Kerbal Space Program</KSPDir>
+    <KSPDir>D:\Projects\KSP\Kerbal Space Program</KSPDir>
 
     <!-- These ones then get set automatically -->
     <ManagedPath>$(KSPDir)\KSP_x64_Data\Managed</ManagedPath>
@@ -219,8 +219,6 @@
   </ItemGroup>
   <ItemGroup />
   <PropertyGroup>
-    <PostBuildEvent>xcopy "$(ProjectDir)\bin\Release\scatterer.dll" "$(GameData)\scatterer" /Y
-
-"$(KSPRoot)\dx11.bat"</PostBuildEvent>
+    <PostBuildEvent>xcopy "$(ProjectDir)\bin\Release\scatterer.dll" "$(GameData)\scatterer" /Y</PostBuildEvent>
   </PropertyGroup>
 </Project>
