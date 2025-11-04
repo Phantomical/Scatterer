@@ -644,7 +644,7 @@ namespace Scatterer {
 
             m_varianceMax = new Vector2(float.NegativeInfinity, float.NegativeInfinity);
 
-            Vector2[] variance32bit = new Vector2[m_varianceSize * m_varianceSize * m_varianceSize];
+            Vector2[,,] variance32bit = new Vector2[m_varianceSize, m_varianceSize, m_varianceSize];
             Color32[] variance8bit = new Color32[m_varianceSize * m_varianceSize * m_varianceSize];
 
             int totalIterations = m_varianceSize * m_varianceSize * m_varianceSize;
@@ -661,18 +661,31 @@ namespace Scatterer {
                     int z = idx / (m_varianceSize * m_varianceSize);
 
                     var variance = ComputeVariance(slopeVarianceDelta, spectrum01, spectrum23, x, y, z);
-                    variance32bit[idx] = variance;
+                    variance32bit[x, y, z] = variance;
+
                     return variance;
                 })
                 .Aggregate(m_varianceMax, (a, b) => new Vector2(Mathf.Max(a.x, b.x), Mathf.Max(a.y, b.y)));
 
-            // Second pass: Normalize and compute m_maxSlopeVariance
-            m_maxSlopeVariance = OceanFFT.UpdateVariance8bit(
-                m_varianceSize,
-                variance32bit,
-                variance8bit,
-                m_varianceMax
-            );
+            // Second pass: Normalize and compute m_maxSlopeVariance in parallel
+            m_maxSlopeVariance = Enumerable
+                .Range(0, totalIterations)
+                .AsParallel()
+                .Select(idx =>
+                {
+                    // Calculate the x, y, z indices from the linear index
+                    int x = idx % m_varianceSize;
+                    int y = (idx / m_varianceSize) % m_varianceSize;
+                    int z = idx / (m_varianceSize * m_varianceSize);
+
+                    var variance = variance32bit[x, y, z];
+
+                    // Store in the 8-bit array
+                    variance8bit[idx] = new Color(variance.x / m_varianceMax.x, variance.y / m_varianceMax.y, 0.0f, 1.0f);
+
+                    return Mathf.Max(variance.x, variance.y);
+                })
+                .Aggregate(0f, Mathf.Max);
 
             m_varianceTexture.SetPixels32(variance8bit);
             m_varianceTexture.Apply();
